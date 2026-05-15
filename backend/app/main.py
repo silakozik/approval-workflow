@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# venv\Scripts\activate
 # uvicorn app.main:app --reload --port 8001 ile çalıştırılacak
+
+# alembic revision --autogenerate -m "initial tables" -> migration dosyası oluşturur
+# alembic upgrade head -> migration'ları veritabanına uygular
 
 # FastAPI uygulama objesi — tüm endpointlerimiz buraya bağlanır
 app = FastAPI(
