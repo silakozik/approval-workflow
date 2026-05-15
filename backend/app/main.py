@@ -1,0 +1,26 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+# uvicorn app.main:app --reload --port 8001 ile çalıştırılacak
+
+# FastAPI uygulama objesi — tüm endpointlerimiz buraya bağlanır
+app = FastAPI(
+    title = "Approval Workflow API",
+    version = "1.0.0"
+)
+
+# CORS: farklı portlardan gelen isteklere izin vermek için gerekli
+# Frontend localhost:3000'de, backend localhost:8000'de çalışacak
+# Bu middleware olmasaydı tarayıcı frontend'in backend'e istek atmasını engellerdi
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], #sadece frontend'e izin ver
+    allow_credentials=True, # cookie ve auth header'larına izin ver
+    allow_methods=["*"], # GET, POST, PUT, DELETE hepsine izin ver
+    allow_headers=["*"], # tüm header'lara izin ver
+)
+
+# Bu endpoint ile backend'in çalışıp çalışmadığını kontrol edebiliriz.
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
