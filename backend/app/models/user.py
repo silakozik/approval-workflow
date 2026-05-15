@@ -10,7 +10,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
 
-    approval_limit = Column(Float, nullanle=True) 
+    approval_limit = Column(Float, nullable=True) 
 
     is_active = Column(Boolean, default=True)
 

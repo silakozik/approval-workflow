@@ -1,5 +1,5 @@
 # pydantic_settings: .env dosyasındaki değerleri okuyup Python objesine çeviren kütüphanedir. Bu sayede uygulama içinde konfigürasyon değerlerine kolayca erişebiliriz.
-from pydantic_setttings import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DATABASE_URL: str

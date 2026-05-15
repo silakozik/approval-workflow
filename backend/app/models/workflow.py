@@ -50,15 +50,15 @@ class WorkflowStep(Base):
 class StepApprover(Base):
     __tablename__ = "step_approvers"
 
-id = Column(Integer, primary_key=True, index=True)
-step_id = Column(Integer, ForeignKey("workflow_steps.id"), nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    step_id = Column(Integer, ForeignKey("workflow_steps.id"), nullable=False)
 
-# Bu adımı onaylayacak kullanıcı
-user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # Bu adımı onaylayacak kullanıcı
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-# Bu onaycı için özel limit (opsiyonel)
-# Talep tutarı bu limitin altındaysa adım otomatik geçilir
-approval_limit = Column(Float, nullable=True)
+    # Bu onaycı için özel limit (opsiyonel)
+    # Talep tutarı bu limitin altındaysa adım otomatik geçilir
+    approval_limit = Column(Float, nullable=True)
 
-step = relationship("WorkflowStep", back_populates="approvers")
-user = relationship("User")
+    step = relationship("WorkflowStep", back_populates="approvers")
+    user = relationship("User")
