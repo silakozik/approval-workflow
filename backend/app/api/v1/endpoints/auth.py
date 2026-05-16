@@ -7,7 +7,7 @@ from app.services.auth_service import register_user, login_user
 from app.repositories.user_repository import get_all_users
 
 # APIRouter: endpoint'leri gruplar, prefix ile ortak URL başlığı verir
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
 
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
@@ -31,6 +31,6 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
 @router.get("/users", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db)):
     """Tüm aktif kullanıcıları listeleyen endpoint (onaycı seçimi için)"""
-    
+
     return get_all_users(db)
   

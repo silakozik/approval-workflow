@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Enum, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy import DateTime
@@ -14,6 +14,11 @@ class ParallelRule(str, enum.Enum):
     ALL = "ALL"  # Tüm onaycılar onaylamalı
     ANY = "ANY"  # Herhangi biri onaylarsa yeter
 
+class ProcessType(str, enum.Enum):
+    PURCHASE_REQUEST = "PURCHASE_REQUEST"
+    SUPPLIER_APPROVAL = "SUPPLIER_APPROVAL"
+    CONTRACT_APPROVAL = "CONTRACT_APPROVAL"
+    ORDER_APPROVAL = "ORDER_APPROVAL"
 
 class Workflow(Base):
     __tablename__ = "workflows"
@@ -21,6 +26,8 @@ class Workflow(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
+    process_type = Column(Enum(ProcessType), nullable=False)  # Hangi süreç tipi
+    is_active = Column(Boolean, default=True, nullable=False)  # Soft delete için
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Workflow'a ait adımlar (one-to-many ilişki)
