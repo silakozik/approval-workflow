@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from app.api.v1.router import api_router
 
 # venv\Scripts\activate
@@ -11,7 +12,10 @@ from app.api.v1.router import api_router
 # FastAPI uygulama objesi — tüm endpointlerimiz buraya bağlanır
 app = FastAPI(
     title = "Approval Workflow API",
-    version = "1.0.0"
+    version = "1.0.0",
+    swagger_ui_init_oauth={
+        "usePkceWithAuthorizationCodeGrant": True,
+    }
 )
 
 # CORS: farklı portlardan gelen isteklere izin vermek için gerekli

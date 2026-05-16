@@ -12,7 +12,7 @@ def get_workflow_by_id(db: Session, workflow_id: int):
     """ID'ye göre workflow getirir, bulunamazsa None döner"""
     return workflow_repository.get_workflow_by_id(db, workflow_id)
 
-def create_workflow(db: Session, workflow_data: WorkflowCreate) -> Workflow:
+def create_workflow(db: Session, data: WorkflowCreate) -> Workflow:
     # 1. Ana workflow kaydını oluştur
     workflow = Workflow(
         name=data.name,
