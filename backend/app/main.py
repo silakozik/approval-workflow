@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.v1.router import api_router
 
 # venv\Scripts\activate
 # uvicorn app.main:app --reload --port 8001 ile çalıştırılacak
@@ -23,6 +24,9 @@ app.add_middleware(
     allow_methods=["*"], # GET, POST, PUT, DELETE hepsine izin ver
     allow_headers=["*"], # tüm header'lara izin ver
 )
+
+# Tüm API route'larını uygulamaya bağla
+app.include_router(api_router) 
 
 # Bu endpoint ile backend'in çalışıp çalışmadığını kontrol edebiliriz.
 @app.get("/health")

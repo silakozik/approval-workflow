@@ -51,6 +51,7 @@ class StepApprover(Base):
     __tablename__ = "step_approvers"
 
     id = Column(Integer, primary_key=True, index=True)
+
     step_id = Column(Integer, ForeignKey("workflow_steps.id"), nullable=False)
 
     # Bu adımı onaylayacak kullanıcı
