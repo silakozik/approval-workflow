@@ -4,7 +4,7 @@ from datetime import datetime
 
 # Pydantic schema'ları API'ye gelen ve giden verinin şeklini tanımlar
 
-class UserBase(BaseModel):
+class UserCreate(BaseModel):
     """Kayıt olurken gönderilecek veri"""
     full_name : str
     email : EmailStr
