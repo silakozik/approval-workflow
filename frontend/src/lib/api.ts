@@ -83,4 +83,6 @@ export const requestApi = {
   cancel: (id: number) => api.post(`/requests/${id}/cancel`),
 
   revise: (id: number, data: any) => api.put(`/requests/${id}/revise`, data),
+
+  getActions: (id: number) => api.get(`/requests/${id}/actions`),
 };

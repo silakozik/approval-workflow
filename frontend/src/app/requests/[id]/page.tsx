@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { requestApi } from "@/lib/api";
+import { requestApi, workflowApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { ApprovalRequest, ApprovalAction } from "@/types";
+import { ApprovalRequest, ApprovalAction, User } from "@/types";
 
 export default function RequestDetailPage() {
   const router = useRouter();
@@ -29,16 +29,29 @@ export default function RequestDetailPage() {
     fetchRequest();
   }, [isAuthenticated]);
 
+  const [users, setUsers] = useState<User[]>([]);
+
   const fetchRequest = async () => {
     try {
-      const response = await requestApi.getById(Number(params.id));
-      setRequest(response.data);
-      // Approval actions için ayrı endpoint ekleyeceğiz, şimdilik boş
+      setLoading(true);
+      const [reqRes, actionsRes, usersRes] = await Promise.all([
+        requestApi.getById(Number(params.id)),
+        requestApi.getActions(Number(params.id)),
+        workflowApi.getApprovers(), // fetch users to match IDs
+      ]);
+      setRequest(reqRes.data);
+      setActions(actionsRes.data);
+      setUsers(usersRes.data);
     } catch (err) {
       setError("Talep yüklenirken hata oluştu");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUserName = (userId: number) => {
+    const foundUser = users.find((u) => u.id === userId);
+    return foundUser ? foundUser.full_name : `Kullanıcı (ID: ${userId})`;
   };
 
   const handleApprove = async () => {
@@ -135,9 +148,8 @@ export default function RequestDetailPage() {
               )}
             </div>
             <span
-              className={`text-sm px-3 py-1 rounded-full font-medium ${
-                statusLabel[request.status]?.color
-              }`}
+              className={`text-sm px-3 py-1 rounded-full font-medium ${statusLabel[request.status]?.color
+                }`}
             >
               {statusLabel[request.status]?.label}
             </span>
@@ -256,6 +268,65 @@ export default function RequestDetailPage() {
             </button>
           </div>
         )}
+
+        {/* Timeline (Geçmiş) */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-6">Onay Geçmişi</h3>
+
+          {actions.length === 0 ? (
+            <p className="text-gray-500 italic">Henüz bir işlem yapılmamış.</p>
+          ) : (
+            <div className="relative border-l border-gray-200 ml-3 space-y-6">
+              {actions.map((action, idx) => {
+                // Renk ve ikon belirleme
+                let dotColor = "bg-gray-400";
+                let actionText = action.action;
+
+                if (action.action === "APPROVED" || action.action === "AUTO_APPROVED") {
+                  dotColor = "bg-green-500";
+                  actionText = action.action === "AUTO_APPROVED" ? "Otomatik Onaylandı" : "Onayladı";
+                } else if (action.action === "REJECTED") {
+                  dotColor = "bg-red-500";
+                  actionText = "Reddetti";
+                } else if (action.action === "CANCELLED") {
+                  dotColor = "bg-gray-500";
+                  actionText = "İptal Etti";
+                }
+
+                return (
+                  <div key={action.id || idx} className="relative pl-6">
+                    {/* Yuvarlak ikon */}
+                    <div className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full ${dotColor} border-2 border-white`}></div>
+
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="font-semibold text-gray-800">
+                          {action.user_id ? getUserName(action.user_id) : "Sistem"}
+                        </span>{" "}
+                        <span className="text-gray-600 text-sm">{actionText}</span>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(action.created_at).toLocaleString("tr-TR")}
+                      </span>
+                    </div>
+
+                    {action.step_id && (
+                      <p className="text-xs text-blue-600 mb-1">
+                        (Adım #{action.step_id})
+                      </p>
+                    )}
+
+                    {action.comment && (
+                      <div className="bg-gray-50 text-gray-600 text-sm p-3 rounded mt-2 border border-gray-100">
+                        "{action.comment}"
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

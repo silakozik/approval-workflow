@@ -14,6 +14,10 @@ def get_my_requests(db: Session, user_id: int):
     """Kullanıcının kendi taleplerini listeler"""
     return request_repository.get_requests_by_user(db, user_id)
 
+def get_request_actions(db: Session, request_id: int):
+    """Talebin onay hareketlerini getirir"""
+    return request_repository.get_actions_by_request(db, request_id)
+
 def create_request(db: Session, data: RequestCreate, current_user_id: int) -> Request:
     """
     Yeni talep oluşturur ve onay akışını başlatır.

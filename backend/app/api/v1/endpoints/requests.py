@@ -5,7 +5,7 @@ from typing import List
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.schemas.request import RequestCreate, RequestResponse, ApproveRequest, RejectRequest
+from app.schemas.request import RequestCreate, RequestResponse, ApproveRequest, RejectRequest, ApprovalActionResponse
 from app.services import request_service
 
 router = APIRouter()
@@ -40,6 +40,15 @@ def get_request(
             detail="Talep bulunamadı"
         )
     return request
+
+@router.get("/{request_id}/actions", response_model=List[ApprovalActionResponse])
+def get_request_actions(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Talebin onay geçmişini getirir"""
+    return request_service.get_request_actions(db, request_id)
 
 @router.post("/", response_model=RequestResponse, status_code=status.HTTP_201_CREATED)
 def create_request(
