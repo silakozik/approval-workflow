@@ -23,3 +23,13 @@ def update_request(db: Session, request: Request) -> Request:
     db.commit()
     db.refresh(request)
     return request
+
+def get_actions_by_request(db: Session, request_id: int):
+    """Bir talebin tüm onay hareketlerini zamana göre sıralı getirir"""
+    from app.models.request import ApprovalAction
+    return (
+        db.query(ApprovalAction)
+        .filter(ApprovalAction.request_id == request_id)
+        .order_by(ApprovalAction.created_at)
+        .all()
+    )
