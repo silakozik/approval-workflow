@@ -2,9 +2,16 @@ from sqlalchemy.orm import Session
 from app.models.workflow import Workflow, WorkflowStep, StepApprover
 
 def get_all_workflows(db: Session):
-    """Aktif tüm workflow'ları getirir"""
-    return db.query(Workflow).filter(Workflow.is_active == True).all()
-
+    """Aktif tüm workflow'ları adımları ve onaycılarıyla birlikte getirir"""
+    from sqlalchemy.orm import joinedload
+    return (
+        db.query(Workflow)
+        .options(
+            joinedload(Workflow.steps).joinedload(WorkflowStep.approvers)
+        )
+        .filter(Workflow.is_active == True)
+        .all()
+    )
 def get_workflow_by_id(db: Session, workflow_id: int):
     """ID'ye göre workflow getirir, yoksa None döner"""
     return db.query(Workflow).filter(Workflow.id == workflow_id).first()
