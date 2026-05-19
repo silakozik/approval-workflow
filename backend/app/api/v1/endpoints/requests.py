@@ -50,6 +50,15 @@ def get_request_actions(
     """Talebin onay geçmişini getirir"""
     return request_service.get_request_actions(db, request_id)
 
+@router.get("/{request_id}/pending-approvers")
+def get_pending_approvers(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Talebin şu anki adımında onay beklediği kişileri getirir"""
+    return request_service.get_pending_approvers_for_request(db, request_id)
+
 @router.post("/", response_model=RequestResponse, status_code=status.HTTP_201_CREATED)
 def create_request(
     data: RequestCreate,
@@ -137,3 +146,51 @@ def get_request_actions(
     """Talebin onay hareketlerini getirir"""
     from app.repositories.request_repository import get_actions_by_request
     return get_actions_by_request(db, request_id)
+
+@router.get("/{request_id}/pending-approvers")
+def get_pending_approvers(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Talebin mevcut adımında onay bekleyen kullanıcıları getirir"""
+    from app.models.request import Request, RequestStatus, ApprovalAction, ActionType
+    from app.models.workflow import WorkflowStep, StepApprover
+    from app.repositories.user_repository import get_user_by_id
+
+    request = db.query(Request).filter(Request.id == request_id).first()
+    if not request or request.status != RequestStatus.PENDING:
+        return []
+
+    # Mevcut adımı bul
+    step = db.query(WorkflowStep).filter(
+        WorkflowStep.workflow_id == request.workflow_id,
+        WorkflowStep.step_order == request.current_step_order
+    ).first()
+    if not step:
+        return []
+
+    # Adımdaki onaycıları getir
+    approvers = db.query(StepApprover).filter(StepApprover.step_id == step.id).all()
+
+    # Zaten onaylayanları çıkar
+    approved_user_ids = {
+        a.user_id for a in db.query(ApprovalAction).filter(
+            ApprovalAction.request_id == request_id,
+            ApprovalAction.step_id == step.id,
+            ApprovalAction.action.in_([ActionType.APPROVED, ActionType.AUTO_APPROVED])
+        ).all()
+    }
+
+    # Bekleyen onaycıların bilgilerini döndür
+    result = []
+    for approver in approvers:
+        if approver.user_id not in approved_user_ids:
+            user = get_user_by_id(db, approver.user_id)
+            if user:
+                result.append({
+                    "user_id": user.id,
+                    "full_name": user.full_name,
+                    "email": user.email,
+                })
+    return result

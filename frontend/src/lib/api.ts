@@ -86,4 +86,5 @@ export const requestApi = {
 
   getActions: (id: number) => api.get(`/requests/${id}/actions`),
   
+  getPendingApprovers: (id: number) => api.get(`/requests/${id}/pending-approvers`),
 };

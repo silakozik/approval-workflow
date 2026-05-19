@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { requestApi } from "@/lib/api";
+import { requestApi, workflowApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { ApprovalRequest, ApprovalAction } from "@/types";
+import { ApprovalRequest, ApprovalAction, User, Workflow } from "@/types";
 
 export default function RequestDetailPage() {
   const router = useRouter();
@@ -13,6 +13,9 @@ export default function RequestDetailPage() {
 
   const [request, setRequest] = useState<ApprovalRequest | null>(null);
   const [actions, setActions] = useState<ApprovalAction[]>([]);
+  const [pendingApprovers, setPendingApprovers] = useState<{user_id: number, full_name: string, email: string}[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [comment, setComment] = useState("");
@@ -31,17 +34,37 @@ export default function RequestDetailPage() {
 
   const fetchRequest = async () => {
     try {
-      const [reqRes, actionsRes] = await Promise.all([
+      const [reqRes, actionsRes, approversRes, usersRes] = await Promise.all([
         requestApi.getById(Number(params.id)),
         requestApi.getActions(Number(params.id)),
+        requestApi.getPendingApprovers(Number(params.id)),
+        workflowApi.getApprovers(),
       ]);
       setRequest(reqRes.data);
       setActions(actionsRes.data);
+      setPendingApprovers(approversRes.data);
+      setUsers(usersRes.data);
+
+      if (reqRes.data.workflow_id) {
+        const workflowRes = await workflowApi.getById(reqRes.data.workflow_id);
+        setWorkflow(workflowRes.data);
+      }
     } catch (err) {
       setError("Talep yüklenirken hata oluştu");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUserName = (userId: number) => {
+    const foundUser = users.find((u) => u.id === userId);
+    return foundUser ? foundUser.full_name : `Kullanıcı #${userId}`;
+  };
+
+  const getStepOrder = (stepId: number) => {
+    if (!workflow) return stepId;
+    const step = workflow.steps.find((s) => s.id === stepId);
+    return step ? step.step_order : stepId;
   };
 
   const handleApprove = async () => {
@@ -179,6 +202,23 @@ export default function RequestDetailPage() {
               <p className="font-semibold text-gray-800">#{request.workflow_id}</p>
             </div>
           </div>
+
+          {/* Bekleyen Onaycılar */}
+          {pendingApprovers.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-xs text-gray-400 mb-2">Onay Bekleyen Kişiler</p>
+              <div className="flex flex-wrap gap-2">
+                {pendingApprovers.map((approver) => (
+                  <span
+                    key={approver.user_id}
+                    className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-sm px-3 py-1 rounded-full"
+                  >
+                    ⏳ {approver.full_name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Timeline */}
@@ -188,7 +228,6 @@ export default function RequestDetailPage() {
             <div className="space-y-4">
               {actions.map((action, index) => (
                 <div key={action.id} className="flex gap-4">
-                  {/* Sol çizgi */}
                   <div className="flex flex-col items-center">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -206,7 +245,6 @@ export default function RequestDetailPage() {
                     )}
                   </div>
 
-                  {/* Sağ içerik */}
                   <div className="flex-1 pb-4">
                     <div className="flex justify-between items-start">
                       <div>
@@ -218,7 +256,7 @@ export default function RequestDetailPage() {
                           {actionLabel[action.action]?.label}
                         </span>
                         <p className="text-xs text-gray-400 mt-0.5">
-                          Adım {action.step_id} • Kullanıcı #{action.user_id}
+                          {action.step_id ? `${getStepOrder(action.step_id)}. Adım` : "Sistem"} • {action.user_id ? getUserName(action.user_id) : "Sistem"}
                         </p>
                         {action.comment && (
                           <p className="text-sm text-gray-600 mt-1 bg-gray-50 px-3 py-2 rounded">

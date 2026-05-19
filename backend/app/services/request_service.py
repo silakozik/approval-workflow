@@ -18,6 +18,44 @@ def get_request_actions(db: Session, request_id: int):
     """Talebin onay hareketlerini getirir"""
     return request_repository.get_actions_by_request(db, request_id)
 
+def get_pending_approvers_for_request(db: Session, request_id: int):
+    """Talebin şu anki adımında onay beklediği kişileri getirir"""
+    request = request_repository.get_request_by_id(db, request_id)
+    if not request or request.status != RequestStatus.PENDING:
+        return []
+    
+    step = approval_engine.get_current_step(db, request)
+    if not step:
+        return []
+        
+    approvers = approval_engine.get_step_approvers(db, step.id)
+    
+    # Adımdaki mevcut aksiyonları al (bu adımda onaylayanları bulmak için)
+    from app.models.request import ApprovalAction, ActionType
+    actions = db.query(ApprovalAction).filter(
+        ApprovalAction.request_id == request_id,
+        ApprovalAction.step_id == step.id
+    ).all()
+    
+    acted_user_ids = {
+        action.user_id for action in actions 
+        if action.action in [ActionType.APPROVED, ActionType.AUTO_APPROVED, ActionType.REJECTED]
+    }
+    
+    pending_approvers = []
+    from app.repositories import user_repository
+    for approver in approvers:
+        if approver.user_id not in acted_user_ids:
+            user = user_repository.get_user_by_id(db, approver.user_id)
+            if user:
+                pending_approvers.append({
+                    "user_id": user.id,
+                    "full_name": user.full_name,
+                    "email": user.email
+                })
+                
+    return pending_approvers
+
 def create_request(db: Session, data: RequestCreate, current_user_id: int) -> Request:
     """
     Yeni talep oluşturur ve onay akışını başlatır.
