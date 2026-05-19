@@ -127,3 +127,13 @@ def revise_request(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+    
+@router.get("/{request_id}/actions", response_model=List[ApprovalActionResponse])
+def get_request_actions(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Talebin onay hareketlerini getirir"""
+    from app.repositories.request_repository import get_actions_by_request
+    return get_actions_by_request(db, request_id)

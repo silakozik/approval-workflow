@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { requestApi, workflowApi } from "@/lib/api";
+import { requestApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { ApprovalRequest, ApprovalAction, User } from "@/types";
+import { ApprovalRequest, ApprovalAction } from "@/types";
 
 export default function RequestDetailPage() {
   const router = useRouter();
@@ -29,29 +29,19 @@ export default function RequestDetailPage() {
     fetchRequest();
   }, [isAuthenticated]);
 
-  const [users, setUsers] = useState<User[]>([]);
-
   const fetchRequest = async () => {
     try {
-      setLoading(true);
-      const [reqRes, actionsRes, usersRes] = await Promise.all([
+      const [reqRes, actionsRes] = await Promise.all([
         requestApi.getById(Number(params.id)),
         requestApi.getActions(Number(params.id)),
-        workflowApi.getApprovers(), // fetch users to match IDs
       ]);
       setRequest(reqRes.data);
       setActions(actionsRes.data);
-      setUsers(usersRes.data);
     } catch (err) {
       setError("Talep yüklenirken hata oluştu");
     } finally {
       setLoading(false);
     }
-  };
-
-  const getUserName = (userId: number) => {
-    const foundUser = users.find((u) => u.id === userId);
-    return foundUser ? foundUser.full_name : `Kullanıcı (ID: ${userId})`;
   };
 
   const handleApprove = async () => {
@@ -106,6 +96,13 @@ export default function RequestDetailPage() {
     REVISED: { label: "Revize Edildi", color: "bg-blue-100 text-blue-700" },
   };
 
+  const actionLabel: Record<string, { label: string; color: string; icon: string }> = {
+    APPROVED: { label: "Onaylandı", color: "text-green-600", icon: "✓" },
+    REJECTED: { label: "Reddedildi", color: "text-red-600", icon: "✕" },
+    CANCELLED: { label: "İptal Edildi", color: "text-gray-500", icon: "⊘" },
+    AUTO_APPROVED: { label: "Otomatik Onaylandı", color: "text-blue-600", icon: "⚡" },
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -148,8 +145,9 @@ export default function RequestDetailPage() {
               )}
             </div>
             <span
-              className={`text-sm px-3 py-1 rounded-full font-medium ${statusLabel[request.status]?.color
-                }`}
+              className={`text-sm px-3 py-1 rounded-full font-medium ${
+                statusLabel[request.status]?.color
+              }`}
             >
               {statusLabel[request.status]?.label}
             </span>
@@ -183,16 +181,71 @@ export default function RequestDetailPage() {
           </div>
         </div>
 
+        {/* Timeline */}
+        {actions.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="font-semibold text-gray-700 mb-4">Onay Geçmişi</h3>
+            <div className="space-y-4">
+              {actions.map((action, index) => (
+                <div key={action.id} className="flex gap-4">
+                  {/* Sol çizgi */}
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        action.action === "APPROVED" || action.action === "AUTO_APPROVED"
+                          ? "bg-green-100 text-green-600"
+                          : action.action === "REJECTED"
+                          ? "bg-red-100 text-red-600"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {actionLabel[action.action]?.icon}
+                    </div>
+                    {index < actions.length - 1 && (
+                      <div className="w-0.5 h-full bg-gray-200 mt-1" />
+                    )}
+                  </div>
+
+                  {/* Sağ içerik */}
+                  <div className="flex-1 pb-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span
+                          className={`font-medium text-sm ${
+                            actionLabel[action.action]?.color
+                          }`}
+                        >
+                          {actionLabel[action.action]?.label}
+                        </span>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Adım {action.step_id} • Kullanıcı #{action.user_id}
+                        </p>
+                        {action.comment && (
+                          <p className="text-sm text-gray-600 mt-1 bg-gray-50 px-3 py-2 rounded">
+                            "{action.comment}"
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(action.created_at).toLocaleDateString("tr-TR")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded">{error}</div>
         )}
 
-        {/* Aksiyon Butonları — sadece PENDING ise göster */}
+        {/* Aksiyon Butonları */}
         {request.status === "PENDING" && (
           <div className="bg-white rounded-lg shadow p-6 space-y-4">
             <h3 className="font-semibold text-gray-700">İşlemler</h3>
 
-            {/* Onay */}
             <div className="space-y-2">
               <input
                 type="text"
@@ -210,7 +263,6 @@ export default function RequestDetailPage() {
               </button>
             </div>
 
-            {/* Red */}
             {!showRejectForm ? (
               <button
                 onClick={() => setShowRejectForm(true)}
@@ -245,7 +297,6 @@ export default function RequestDetailPage() {
               </div>
             )}
 
-            {/* İptal */}
             <button
               onClick={handleCancel}
               disabled={actionLoading}
@@ -256,7 +307,7 @@ export default function RequestDetailPage() {
           </div>
         )}
 
-        {/* Revize — sadece REJECTED ise göster */}
+        {/* Revize */}
         {request.status === "REJECTED" && request.created_by === user?.id && (
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="font-semibold text-gray-700 mb-3">Revize Et</h3>
@@ -268,65 +319,6 @@ export default function RequestDetailPage() {
             </button>
           </div>
         )}
-
-        {/* Timeline (Geçmiş) */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-6">Onay Geçmişi</h3>
-
-          {actions.length === 0 ? (
-            <p className="text-gray-500 italic">Henüz bir işlem yapılmamış.</p>
-          ) : (
-            <div className="relative border-l border-gray-200 ml-3 space-y-6">
-              {actions.map((action, idx) => {
-                // Renk ve ikon belirleme
-                let dotColor = "bg-gray-400";
-                let actionText = action.action;
-
-                if (action.action === "APPROVED" || action.action === "AUTO_APPROVED") {
-                  dotColor = "bg-green-500";
-                  actionText = action.action === "AUTO_APPROVED" ? "Otomatik Onaylandı" : "Onayladı";
-                } else if (action.action === "REJECTED") {
-                  dotColor = "bg-red-500";
-                  actionText = "Reddetti";
-                } else if (action.action === "CANCELLED") {
-                  dotColor = "bg-gray-500";
-                  actionText = "İptal Etti";
-                }
-
-                return (
-                  <div key={action.id || idx} className="relative pl-6">
-                    {/* Yuvarlak ikon */}
-                    <div className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full ${dotColor} border-2 border-white`}></div>
-
-                    <div className="flex justify-between items-start mb-1">
-                      <div>
-                        <span className="font-semibold text-gray-800">
-                          {action.user_id ? getUserName(action.user_id) : "Sistem"}
-                        </span>{" "}
-                        <span className="text-gray-600 text-sm">{actionText}</span>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(action.created_at).toLocaleString("tr-TR")}
-                      </span>
-                    </div>
-
-                    {action.step_id && (
-                      <p className="text-xs text-blue-600 mb-1">
-                        (Adım #{action.step_id})
-                      </p>
-                    )}
-
-                    {action.comment && (
-                      <div className="bg-gray-50 text-gray-600 text-sm p-3 rounded mt-2 border border-gray-100">
-                        "{action.comment}"
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
