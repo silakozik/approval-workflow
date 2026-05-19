@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { workflowApi } from "@/lib/api";
+import { workflowApi, authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { Workflow } from "@/types";
+import { Workflow, User } from "@/types";
 
 export default function WorkflowDetailPage() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function WorkflowDetailPage() {
   const { isAuthenticated, initAuth } = useAuthStore();
 
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -26,13 +27,22 @@ export default function WorkflowDetailPage() {
 
   const fetchWorkflow = async () => {
     try {
-      const response = await workflowApi.getById(Number(params.id));
-      setWorkflow(response.data);
+      const [workflowRes, usersRes] = await Promise.all([
+        workflowApi.getById(Number(params.id)),
+        authApi.getUsers()
+      ]);
+      setWorkflow(workflowRes.data);
+      setUsers(usersRes.data);
     } catch (err) {
       setError("Workflow yüklenirken hata oluştu");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUserName = (userId: number) => {
+    const foundUser = users.find((u) => u.id === userId);
+    return foundUser ? foundUser.full_name : `Kullanıcı #${userId}`;
   };
 
   const handleDelete = async () => {
@@ -165,7 +175,7 @@ export default function WorkflowDetailPage() {
                           className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded text-sm"
                         >
                           <span className="text-gray-700">
-                            Kullanıcı #{approver.user_id}
+                            {getUserName(approver.user_id)}
                           </span>
                           {approver.approval_limit && (
                             <span className="text-gray-400 text-xs">
