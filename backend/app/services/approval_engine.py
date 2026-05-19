@@ -66,10 +66,25 @@ def advance_to_next_step(db: Session, request: Request):
         db.commit()
         # Yeni adımda auto-approve kontrolü yap
         process_auto_approvals(db, request)
+        
+        if request.status == RequestStatus.PENDING:
+            from app.services import email_service
+            email_service.notify_current_approvers(
+                db, request, 
+                subject="Yeni Onay Talebi", 
+                body=f"'{request.title}' başlıklı talep onayınızı bekliyor.\nTutar: {request.amount} TL"
+            )
     else:
         # Son adımdı, talep onaylandı
         request.status = RequestStatus.APPROVED
         db.commit()
+        
+        from app.services import email_service
+        email_service.notify_request_creator(
+            db, request,
+            subject="Talebiniz Onaylandı",
+            body=f"'{request.title}' başlıklı talebiniz tüm onay adımlarından geçerek tamamen onaylanmıştır."
+        )
 
 def process_auto_approvals(db: Session, request: Request):
     """
@@ -169,6 +184,13 @@ def reject(db: Session, request: Request, user_id: int, comment: str):
     request.status = RequestStatus.REJECTED
     db.commit()
 
+    from app.services import email_service
+    email_service.notify_request_creator(
+        db, request,
+        subject="Talebiniz Reddedildi",
+        body=f"'{request.title}' başlıklı talebiniz reddedildi.\n\nRed Nedeni: {comment}"
+    )
+
 def cancel(db: Session, request: Request, user_id: int):
     """
     Süreci iptal eder.
@@ -187,3 +209,10 @@ def cancel(db: Session, request: Request, user_id: int):
 
     request.status = RequestStatus.CANCELLED
     db.commit()
+
+    from app.services import email_service
+    email_service.notify_request_creator(
+        db, request,
+        subject="Süreç İptal Edildi",
+        body=f"'{request.title}' başlıklı onay süreci iptal edildi."
+    )

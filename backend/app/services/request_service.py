@@ -83,7 +83,16 @@ def create_request(db: Session, data: RequestCreate, current_user_id: int) -> Re
     # İlk adımda auto-approve kontrolü yap
     approval_engine.process_auto_approvals(db, created)
 
-    return request_repository.get_request_by_id(db, created.id)
+    request = request_repository.get_request_by_id(db, created.id)
+    if request.status == RequestStatus.PENDING and request.current_step_order == 1:
+        from app.services import email_service
+        email_service.notify_current_approvers(
+            db, request, 
+            subject="Yeni Onay Talebi", 
+            body=f"'{request.title}' başlıklı talep onayınızı bekliyor.\nTutar: {request.amount} TL"
+        )
+
+    return request
 
 def approve_request(db: Session, request_id: int, user_id: int, comment: str | None = None):
     """Talebi onaylar"""
@@ -143,4 +152,13 @@ def revise_request(db: Session, request_id: int, user_id: int, data: RequestCrea
     # Auto-approve kontrolü yap
     approval_engine.process_auto_approvals(db, updated)
 
-    return request_repository.get_request_by_id(db, request_id)
+    request = request_repository.get_request_by_id(db, request_id)
+    if request.status == RequestStatus.PENDING and request.current_step_order == 1:
+        from app.services import email_service
+        email_service.notify_current_approvers(
+            db, request, 
+            subject="Revize Onay Talebi", 
+            body=f"'{request.title}' başlıklı talep revize edildi ve onayınızı bekliyor.\nTutar: {request.amount} TL"
+        )
+
+    return request
