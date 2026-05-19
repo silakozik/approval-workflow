@@ -18,10 +18,7 @@ export default function WorkflowsPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
+    if (!isAuthenticated) return;
     fetchWorkflows();
   }, [isAuthenticated]);
 
