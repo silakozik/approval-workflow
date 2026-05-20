@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { User } from "@/types";
+import { useThemeStore } from "@/store/themeStore";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -13,9 +14,11 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const { isDark, toggleTheme, initTheme } = useThemeStore();
 
   useEffect(() => {
     initAuth();
+    initTheme();
   }, []);
 
   useEffect(() => {
@@ -86,6 +89,12 @@ export default function AdminPage() {
           <a href="/requests" className="text-gray-600 hover:text-blue-600">
             Talepler
           </a>
+          <button
+            onClick={toggleTheme}
+            className="text-gray-600 hover:text-gray-800"
+          >
+            {isDark ? "☀️" : "🌙"}
+          </button>
           <button
             onClick={() => {
               useAuthStore.getState().logout();

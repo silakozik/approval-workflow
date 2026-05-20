@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { workflowApi } from "@/lib/api";
 import { Workflow } from "@/types";
 import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
 
 export default function WorkflowsPage() {
   const router = useRouter();
@@ -12,9 +13,11 @@ export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { isDark, toggleTheme, initTheme } = useThemeStore();
 
   useEffect(() => {
     initAuth();
+    initTheme();
   }, []);
 
   useEffect(() => {
@@ -65,6 +68,12 @@ export default function WorkflowsPage() {
               Admin Panel
             </a>
           )}
+          <button
+            onClick={toggleTheme}
+            className="text-gray-600 hover:text-gray-800"
+          >
+            {isDark ? "☀️" : "🌙"}
+          </button>
           <button
             onClick={() => {
               useAuthStore.getState().logout();

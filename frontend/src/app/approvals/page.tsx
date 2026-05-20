@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { requestApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { ApprovalRequest } from "@/types";
+import { useThemeStore } from "@/store/themeStore";
 
 export default function ApprovalsPage() {
   const router = useRouter();
@@ -12,9 +13,11 @@ export default function ApprovalsPage() {
   const [pendingRequests, setPendingRequests] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { isDark, toggleTheme, initTheme } = useThemeStore();
 
   useEffect(() => {
     initAuth();
+    initTheme();
   }, []);
 
   useEffect(() => {
@@ -61,6 +64,12 @@ export default function ApprovalsPage() {
               Admin Panel
             </a>
           )}
+          <button
+            onClick={toggleTheme}
+            className="text-gray-600 hover:text-gray-800"
+          >
+            {isDark ? "☀️" : "🌙"}
+          </button>
           <button
             onClick={() => {
               useAuthStore.getState().logout();
