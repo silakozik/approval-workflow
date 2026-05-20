@@ -163,3 +163,4 @@ State machine pattern kullanıldı. Her onay aksiyonu sonrası engine sonraki ad
 - ✅ Docker
 - ✅ Email notification simulation
 - ✅ Role-based authorization (RBAC)
+- ✅ Dark Mode
