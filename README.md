@@ -61,6 +61,13 @@ Projenin kalbi `approval_engine.py` dosyasında. Şu özellikleri destekler:
 
 ## Kurulum
 
+### Test Kullanıcıları
+
+| Email | Şifre | Rol |
+|-------|-------|-----|
+| silakozik@test.com | 123456 | ADMIN |
+| test@test.com | 123456 | EMPLOYEE |
+
 ### Gereksinimler
 
 - Python 3.12+
