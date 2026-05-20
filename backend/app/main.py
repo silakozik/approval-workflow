@@ -6,6 +6,8 @@ from app.api.v1.router import api_router
 # venv\Scripts\activate
 # uvicorn app.main:app --reload --port 8001 ile çalıştırılacak
 
+#sadece docker-compose up --build ile çalıştırılabilir !!! tek tek frontend ve backend'e gerek yok !!!
+
 # alembic revision --autogenerate -m "initial tables" -> migration dosyası oluşturur
 # alembic upgrade head -> migration'ları veritabanına uygular
 

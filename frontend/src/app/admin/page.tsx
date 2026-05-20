@@ -6,6 +6,7 @@ import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { User } from "@/types";
 import { useThemeStore } from "@/store/themeStore";
+import { useLangStore } from "@/store/langStore";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -15,10 +16,12 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const { isDark, toggleTheme, initTheme } = useThemeStore();
+  const { t, lang, toggleLang, initLang } = useLangStore();
 
   useEffect(() => {
     initAuth();
     initTheme();
+    initLang();
   }, []);
 
   useEffect(() => {
@@ -35,7 +38,7 @@ export default function AdminPage() {
       const response = await authApi.getUsers();
       setUsers(response.data);
     } catch (err) {
-      setError("Kullanıcılar yüklenemedi");
+      setError(t.usersLoadError);
     } finally {
       setLoading(false);
     }
@@ -44,50 +47,78 @@ export default function AdminPage() {
   const handleRoleChange = async (userId: number, newRole: string) => {
     try {
       await authApi.updateUserRole(userId, newRole);
-      setSuccessMessage("Rol güncellendi!");
+      setSuccessMessage(t.roleUpdated);
       setTimeout(() => setSuccessMessage(""), 3000);
       fetchUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Rol güncellenemedi");
+    } catch (err: unknown) {
+      const detail =
+        err &&
+        typeof err === "object" &&
+        "response" in err &&
+        err.response &&
+        typeof err.response === "object" &&
+        "data" in err.response &&
+        err.response.data &&
+        typeof err.response.data === "object" &&
+        "detail" in err.response.data
+          ? String(err.response.data.detail)
+          : t.roleUpdateFailed;
+      setError(detail);
     }
   };
 
   const handleToggleActive = async (userId: number) => {
     try {
       await authApi.toggleUserActive(userId);
-      setSuccessMessage("Kullanıcı durumu güncellendi!");
+      setSuccessMessage(t.statusUpdated);
       setTimeout(() => setSuccessMessage(""), 3000);
       fetchUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Durum güncellenemedi");
+    } catch (err: unknown) {
+      const detail =
+        err &&
+        typeof err === "object" &&
+        "response" in err &&
+        err.response &&
+        typeof err.response === "object" &&
+        "data" in err.response &&
+        err.response.data &&
+        typeof err.response.data === "object" &&
+        "detail" in err.response.data
+          ? String(err.response.data.detail)
+          : t.statusUpdateFailed;
+      setError(detail);
     }
   };
 
   const roleLabel: Record<string, { label: string; color: string }> = {
-    ADMIN: { label: "Admin", color: "bg-red-100 text-red-700" },
-    MANAGER: { label: "Manager", color: "bg-purple-100 text-purple-700" },
-    EMPLOYEE: { label: "Employee", color: "bg-gray-100 text-gray-600" },
+    ADMIN: { label: t.roleAdmin, color: "bg-red-100 text-red-700" },
+    MANAGER: { label: t.roleManager, color: "bg-purple-100 text-purple-700" },
+    EMPLOYEE: { label: t.roleEmployee, color: "bg-gray-100 text-gray-600" },
   };
+
+  const dateLocale = lang === "tr" ? "tr-TR" : "en-US";
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Yükleniyor...</p>
+        <p className="text-gray-500">{t.loading}</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
       <nav className="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-gray-800">Approval Workflow</h1>
+        <h1 className="text-xl font-bold text-gray-800">{t.appName}</h1>
         <div className="flex gap-4">
           <a href="/workflows" className="text-gray-600 hover:text-blue-600">
-            Workflow'lar
+            {t.workflows}
           </a>
           <a href="/requests" className="text-gray-600 hover:text-blue-600">
-            Talepler
+            {t.requests}
+          </a>
+          <a href="/approvals" className="text-gray-600 hover:text-blue-600">
+            {t.approvals}
           </a>
           <button
             onClick={toggleTheme}
@@ -96,19 +127,25 @@ export default function AdminPage() {
             {isDark ? "☀️" : "🌙"}
           </button>
           <button
+            onClick={toggleLang}
+            className="text-gray-600 hover:text-gray-800"
+          >
+            {lang === "tr" ? "EN" : "TR"}
+          </button>
+          <button
             onClick={() => {
               useAuthStore.getState().logout();
               router.push("/login");
             }}
             className="text-red-500 hover:text-red-700"
           >
-            Çıkış
+            {t.logout}
           </button>
         </div>
       </nav>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Admin Paneli</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">{t.adminPanelTitle}</h2>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded mb-4">{error}</div>
@@ -121,12 +158,12 @@ export default function AdminPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Kullanıcı</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Rol</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Limit</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Durum</th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">İşlemler</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{t.user}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{t.email}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{t.role}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{t.limit}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{t.status}</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{t.operations}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -140,11 +177,11 @@ export default function AdminPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-500 text-sm">
-                    {u.approval_limit ? `${u.approval_limit.toLocaleString("tr-TR")} TL` : "-"}
+                    {u.approval_limit ? `${u.approval_limit.toLocaleString(dateLocale)} TL` : "-"}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${u.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
-                      {u.is_active ? "Aktif" : "Pasif"}
+                      {u.is_active ? t.active : t.passive}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -156,19 +193,19 @@ export default function AdminPage() {
                             onChange={(e) => handleRoleChange(u.id, e.target.value)}
                             className="text-xs border border-gray-300 rounded px-2 py-1"
                           >
-                            <option value="EMPLOYEE">Employee</option>
-                            <option value="MANAGER">Manager</option>
-                            <option value="ADMIN">Admin</option>
+                            <option value="EMPLOYEE">{t.roleEmployee}</option>
+                            <option value="MANAGER">{t.roleManager}</option>
+                            <option value="ADMIN">{t.roleAdmin}</option>
                           </select>
                           <button
                             onClick={() => handleToggleActive(u.id)}
                             className={`text-xs px-2 py-1 rounded ${u.is_active ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}
                           >
-                            {u.is_active ? "Pasif Yap" : "Aktif Yap"}
+                            {u.is_active ? t.makePassive : t.makeActive}
                           </button>
                         </>
                       ) : (
-                        <span className="text-xs text-gray-400">Sen</span>
+                        <span className="text-xs text-gray-400">{t.you}</span>
                       )}
                     </div>
                   </td>
