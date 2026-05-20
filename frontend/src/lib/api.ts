@@ -46,6 +46,12 @@ export const authApi = {
     approval_limit?: number;
   }) => api.post("/auth/register", data),
 
+  updateUserRole: (userId: number, role: string) =>
+    api.patch(`/auth/users/${userId}/role?role=${role}`),
+  
+  toggleUserActive: (userId: number) =>
+    api.patch(`/auth/users/${userId}/toggle-active`),
+
   getUsers: () => api.get("/auth/users"),
 };
 

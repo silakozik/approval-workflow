@@ -56,6 +56,11 @@ export default function ApprovalsPage() {
           <a href="/requests" className="text-gray-600 hover:text-blue-600">
             Talepler
           </a>
+          {user?.role === "ADMIN" && (
+            <a href="/admin" className="text-purple-600 hover:text-purple-800 font-medium">
+              Admin Panel
+            </a>
+          )}
           <button
             onClick={() => {
               useAuthStore.getState().logout();

@@ -23,7 +23,7 @@ app = FastAPI(
 # Bu middleware olmasaydı tarayıcı frontend'in backend'e istek atmasını engellerdi
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], #sadece frontend'e izin ver
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"], #sadece frontend'e izin ver
     allow_credentials=True, # cookie ve auth header'larına izin ver
     allow_methods=["*"], # GET, POST, PUT, DELETE hepsine izin ver
     allow_headers=["*"], # tüm header'lara izin ver

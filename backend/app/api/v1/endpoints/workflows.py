@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.workflow import WorkflowCreate, WorkflowResponse
 from app.schemas.user import UserResponse
@@ -41,6 +41,7 @@ def create_workflow(
     current_user: User = Depends(get_current_user)
 ):
     """Yeni workflow oluşturur"""
+    require_admin(current_user)
     return workflow_service.create_workflow(db, data)
 
 @router.delete("/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -50,6 +51,7 @@ def delete_workflow(
     current_user: User = Depends(get_current_user)
 ):
     """Workflow'u pasife çeker (soft delete)"""
+    require_admin(current_user)
     result = workflow_service.delete_workflow(db, workflow_id)
     if not result:
         raise HTTPException(

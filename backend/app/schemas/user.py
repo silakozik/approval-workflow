@@ -21,6 +21,7 @@ class UserResponse(BaseModel):
     id :int
     full_name : str
     email : EmailStr
+    role : str
     approval_limit : Optional[float] = None
     is_active : bool
     created_at : datetime

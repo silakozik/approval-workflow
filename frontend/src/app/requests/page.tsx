@@ -8,7 +8,7 @@ import { ApprovalRequest } from "@/types";
 
 export default function RequestsPage() {
   const router = useRouter();
-  const { isAuthenticated, initAuth } = useAuthStore();
+  const { isAuthenticated, initAuth, user } = useAuthStore();
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,6 +61,11 @@ export default function RequestsPage() {
           <a href="/approvals" className="text-gray-600 hover:text-blue-600">
             Onaylarım
           </a>
+          {user?.role === "ADMIN" && (
+            <a href="/admin" className="text-purple-600 hover:text-purple-800 font-medium">
+              Admin Panel
+            </a>
+          )}
           <button
             onClick={() => {
               useAuthStore.getState().logout();

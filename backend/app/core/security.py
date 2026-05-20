@@ -71,3 +71,23 @@ def get_current_user(
         raise credentials_exception
 
     return user
+
+def require_admin(current_user):
+    """Sadece ADMIN rolüne izin ver"""
+    from app.models.user import UserRole
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu işlem için admin yetkisi gereklidir"
+        )
+    return current_user
+
+def require_manager_or_admin(current_user):
+    """ADMIN veya MANAGER rolüne izin ver"""
+    from app.models.user import UserRole
+    if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu işlem için yönetici yetkisi gereklidir"
+        )
+    return current_user
